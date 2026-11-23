@@ -26,7 +26,7 @@
     </div>
 
     <form method="POST" action="/send" class="input-form" id="chatForm">
-        <input type="text" name="message" placeholder="Ask about the weather..." required />
+        <input type="text" name="message" placeholder="Ask about the weather..." maxlength="500" required />
         <input type="hidden" name="latitude" id="latitude" />
         <input type="hidden" name="longitude" id="longitude" />
         <button type="submit">Send</button>
@@ -46,6 +46,14 @@
                 document.getElementById('longitude').value = position.coords.longitude;
             });
         }
+
+        // Show that we're working, and stop extra clicks from sending the
+        // same question again (each one uses up the API's request limit).
+        document.getElementById('chatForm').addEventListener('submit', function () {
+            const button = this.querySelector('button');
+            button.disabled = true;
+            button.textContent = 'Thinking…';
+        });
     </script>
 </body>
 </html>
