@@ -1,0 +1,89 @@
+import atexit
+import os
+from flask import session
+import requests
+from datetime import date
+from dotenv import load_dotenv
+from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_core.messages import HumanMessage
+from langchain.agents import create_agent
+from langchain_core.messages import AIMessageChunk
+# from langgraph.checkpoint.memory import InMemorySaver
+# from langgraph.checkpoint.sqlite import SqliteSaver
+from langgraph.checkpoint.postgres import PostgresSaver
+
+load_dotenv()
+
+DB_URI = os.getenv("DATABASE_URI")
+
+today = date.today().strftime("%A, %B %d, %Y")
+
+def get_weather(city: str):
+    """Get the current weather for a given city."""
+    api_key = os.getenv("OPEN_WEATHER_API_KEY")
+    base_url = "https://api.openweathermap.org/data/2.5/weather"
+    params = {"q": city, "appid": api_key, "units": "metric"}
+    response = requests.get(base_url, params=params)
+    data = response.json()
+    return data
+
+def get_location():
+    """Get user's current location based. Use this when asked about weather."""
+    lat = session['user_location']['lat']
+    lon = session['user_location']['lon']
+    return lat, lon
+
+llm = ChatGoogleGenerativeAI(
+    model="gemini-3.1-flash-lite",
+    temperature=0.7,
+)
+
+system_prompt = f"Today's date is {today}. "\
+                "You are a friendly weather reporter. "\
+                "When the user asks about their current location, use get_location. "\
+                "Use current location if user does not specify. "\
+                "Always use get_weather to retrieve current weather data. "\
+                "Use both the 'main', 'description', 'wind', 'humidity', 'temp', and 'feels_like' fields from the "\
+                "'weather' array in the API response to describe conditions. "\
+                "The 'main' field represents the general weather condition, "\
+                "while 'description' provides more specific details. "\
+                "Suggest what to wear based on the conditions. "\
+                "Never invent weather information."
+
+def ask_agent(prompt, thread_id):
+
+    for chunk, metadata in agent.stream(
+        input={"messages": [HumanMessage(content=prompt)]},
+        stream_mode="messages",
+        config={"configurable": {"thread_id": thread_id}},
+    ):
+        if isinstance(chunk, AIMessageChunk) and chunk.text:
+            yield chunk.text
+
+memory = PostgresSaver.from_conn_string(DB_URI)
+checkpointer = memory.__enter__()
+atexit.register(memory.__exit__, None, None, None)
+
+checkpointer.setup()
+
+agent = create_agent(
+    model=llm,
+    system_prompt=system_prompt,
+    tools=[get_weather, get_location],
+    checkpointer=checkpointer,
+)
+
+    # while True:
+        # user_query = input("\nYou: ")
+        # if user_query in ["bye", "quit", "exit"]:
+        #     break
+        #
+        # print("AI: ", end="", flush=True)
+
+        # for text in ask_agent(user_query):
+        #     for char in text:
+        #         print(char, end="", flush=True)
+        #         time.sleep(0.01)
+        #
+        # print()
+

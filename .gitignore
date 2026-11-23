@@ -1,0 +1,22 @@
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+
+# Virtual environments
+.venv
+
+# Secrets
+.env
+
+# Node packages
+node_modules/
+
+# Local LangGraph checkpoint database
+checkpoints.db*
+
+# IDE settings
+.idea/

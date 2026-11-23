@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Weather Assistant</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <h1>🌤️ Weather Assistant</h1>
+
+    <div class="chat-box">
+        {% if messages %}
+            {% for msg in messages %}
+                {% if msg.type == 'human' %}
+                    <div class="message user">
+                        {{ msg.content }}
+                    </div>
+                {% elif msg.type == 'ai' %}
+                    <div class="message agent">
+                        {{ msg.content }}
+                    </div>
+                {% endif %}
+            {% endfor %}
+        {% else %}
+            <p style="color: #999; text-align: center;">Ask me about the weather!</p>
+        {% endif %}
+    </div>
+
+    <form method="POST" action="/send" class="input-form" id="chatForm">
+        <input type="text" name="message" placeholder="Ask about the weather..." required />
+        <input type="hidden" name="latitude" id="latitude" />
+        <input type="hidden" name="longitude" id="longitude" />
+        <button type="submit">Send</button>
+    </form>
+
+    <form method="POST" action="{{ url_for('clear') }}">
+    <button type="submit" class="clear-btn">
+        New Conversation
+    </button>
+    </form>
+
+    <script>
+        // Get user's location once when page loads
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(function(position) {
+                document.getElementById('latitude').value = position.coords.latitude;
+                document.getElementById('longitude').value = position.coords.longitude;
+            });
+        }
+    </script>
+</body>
+</html>
